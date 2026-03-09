@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#1a0a00">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="دفتري">
+  <title>دفتري السري 📖</title>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f0800;
+      --gold: #d4a843;
+      --gold2: #f0c96a;
+      --gold-dim: rgba(212,168,67,0.12);
+      --border: rgba(212,168,67,0.2);
+      --red-dark: #4a0a0a;
+      --red: #7a1515;
+      --paper: #faf3e0;
+      --paper2: #f0e6c8;
+      --ink: #1a1005;
+      --muted: rgba(212,168,67,0.45);
+      --st: env(safe-area-inset-top,0px);
+      --sb: env(safe-area-inset-bottom,0px);
+    }
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif;background:var(--bg)}
+
+    /* ══════════════════════════════════
+       LOCK SCREEN
+    ══════════════════════════════════ */
+    #lock{
+      position:fixed;inset:0;
+      background:
+        radial-gradient(ellipse at 25% 15%, rgba(122,21,21,.18) 0%, transparent 55%),
+        radial-gradient(ellipse at 80% 85%, rgba(212,168,67,.07) 0%, transparent 50%),
+        linear-gradient(160deg,#1c0c00,#0a0400 55%,#160800);
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      padding: calc(var(--st) + 16px) 16px calc(var(--sb) + 16px);
+      gap:24px;z-index:999;
+    }
+    #lock::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;
+      background:linear-gradient(90deg,transparent,var(--gold),var(--gold2),var(--gold),transparent)}
+
+    .lk-label{font-family:'Amiri',serif;font-size:13px;color:var(--muted);letter-spacing:5px}
+
+    /* Floating book */
+    .lk-book{
+      width:120px;height:155px;position:relative;
+      animation:bFloat 4s ease-in-out infinite;
+      flex-shrink:0;
+    }
+    @keyframes bFloat{0%,100%{transform:translateY(0) rotate(-1.5deg)}50%{transform:translateY(-10px) rotate(1.5deg)}}
+    .lk-book-body{
+      width:100%;height:100%;
+      background:linear-gradient(145deg,#7a1515,#4a0a0a 60%,#380808);
+      border-radius:3px 12px 12px 3px;
+      box-shadow:-5px 0 0 #280606,0 20px 55px rgba(0,0,0,.7),inset 1px 1px 0 rgba(255,255,255,.04);
+      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+      position:relative;overflow:hidden;
+    }
+    .lk-book-body::before{content:'';position:absolute;right:-1px;top:8%;height:84%;width:4px;
+      background:linear-gradient(to bottom,#c9963a,#7a5a20,#c9963a,#7a5a20,#c9963a);border-radius:0 2px 2px 0}
+    .lk-book-body::after{content:'';position:absolute;inset:16px 16px 16px 22px;
+      background:repeating-linear-gradient(to bottom,transparent 0,transparent 12px,rgba(201,150,58,.1) 12px,rgba(201,150,58,.1) 13px)}
+    .lk-book-icon{font-size:32px;z-index:1;filter:drop-shadow(0 0 10px rgba(212,168,67,.6))}
+    .lk-book-name{font-family:'Amiri',serif;color:var(--gold);font-size:15px;z-index:1}
+    .lk-glow{position:absolute;width:180px;height:180px;border-radius:50%;
+      background:radial-gradient(circle,rgba(212,168,67,.18) 0%,transparent 70%);
+      animation:gPulse 3s ease-in-out infinite}
+    @keyframes gPulse{0%,100%{opacity:.6;transform:scale(1)}50%{opacity:1;transform:scale(1.2)}}
+
+    /* PIN Panel */
+    .lk-panel{
+      width:min(310px,94vw);
+      background:rgba(20,8,0,.82);
+      border:1px solid var(--border);border-radius:22px;
+      padding:22px 18px 18px;
+      backdrop-filter:blur(18px);
+      box-shadow:0 28px 70px rgba(0,0,0,.55),inset 0 1px 0 rgba(212,168,67,.1);
+    }
+    .lk-title{font-family:'Amiri',serif;font-size:20px;color:var(--gold2);text-align:center;margin-bottom:4px}
+    .lk-sub{font-size:11px;color:var(--muted);text-align:center;margin-bottom:18px;min-height:16px}
+
+    /* Dots */
+    .dots{display:flex;justify-content:center;gap:12px;margin-bottom:18px}
+    .dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--border);background:transparent;transition:all .2s}
+    .dot.on{background:var(--gold);border-color:var(--gold);box-shadow:0 0 8px rgba(212,168,67,.5);transform:scale(1.15)}
+    .dot.err{background:#e05555;border-color:#e05555;animation:shake .4s ease}
+    @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+
+    /* Numpad */
+    .numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    .nb{
+      background:rgba(212,168,67,.07);border:1px solid rgba(212,168,67,.13);
+      border-radius:13px;padding:0;
+      color:var(--gold2);font-family:'Cairo',sans-serif;font-size:20px;font-weight:600;
+      cursor:pointer;transition:all .13s;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      min-height:58px;user-select:none;-webkit-user-select:none;
+    }
+    .nb sub{font-size:8px;color:var(--muted);letter-spacing:.8px;margin-top:1px}
+    .nb:active{background:rgba(212,168,67,.22);border-color:var(--gold);transform:scale(.93)}
+    .nb.ghost{background:transparent;border-color:transparent;cursor:default;pointer-events:none}
+    .lk-err{color:#ff7070;text-align:center;font-size:12px;margin-top:12px;min-height:18px}
+    .lk-hint{color:var(--muted);font-size:11px;text-align:center;margin-top:8px;line-height:1.6}
+
+    /* ══════════════════════════════════
+       APP SHELL
+    ══════════════════════════════════ */
+    #app{
+      display:none;position:fixed;inset:0;
+      flex-direction:column;background:var(--paper);
+    }
+
+    /* AppBar */
+    .abar{
+      background:linear-gradient(135deg,#3a0808,#6b1212);
+      color:var(--gold2);
+      display:flex;align-items:center;justify-content:space-between;
+      padding:0 14px;
+      height:calc(54px + var(--st));
+      padding-top:var(--st);
+      box-shadow:0 2px 14px rgba(0,0,0,.4);
+      flex-shrink:0;position:relative;z-index:10;
+    }
+    .abar::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
+      background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+    .abar-title{font-family:'Amiri',serif;font-size:19px;display:flex;align-items:center;gap:7px}
+    .abtn{
+      background:rgba(212,168,67,.14);border:1px solid rgba(212,168,67,.28);
+      color:var(--gold2);border-radius:10px;padding:7px 11px;
+      font-family:'Cairo',sans-serif;font-size:12px;cursor:pointer;
+      transition:all .2s;display:flex;align-items:center;gap:4px;
+    }
+    .abtn:active{transform:scale(.91);background:rgba(212,168,67,.26)}
+
+    /* ── LIST VIEW ── */
+    #listView{flex:1;overflow:hidden;display:flex;flex-direction:column}
+    #editorView{flex:1;overflow:hidden;display:none;flex-direction:column;position:relative}
+
+    .sbar{
+      padding:10px 14px 8px;background:var(--paper);
+      border-bottom:1px solid rgba(0,0,0,.07);flex-shrink:0;
+    }
+    .sbar input{
+      width:100%;background:white;border:1.5px solid rgba(0,0,0,.1);
+      border-radius:12px;padding:9px 36px 9px 12px;
+      font-family:'Cairo',sans-serif;font-size:14px;color:var(--ink);
+      outline:none;direction:rtl;transition:border .2s;
+    }
+    .sbar input:focus{border-color:var(--gold)}
+    .sbar-icon{position:relative}
+    .sbar-icon::after{content:'🔍';position:absolute;right:11px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none}
+
+    /* Notes scroll */
+    .nscroll{flex:1;overflow-y:auto;padding:10px 12px 90px;-webkit-overflow-scrolling:touch}
+    .nscroll::-webkit-scrollbar{display:none}
+
+    .sec-lbl{font-size:10px;font-weight:700;color:#b0a090;letter-spacing:1.2px;padding:8px 4px 5px}
+
+    .ncard{
+      background:white;border-radius:14px;padding:13px 15px;margin-bottom:9px;
+      border:1.5px solid rgba(0,0,0,.05);cursor:pointer;
+      transition:all .18s;box-shadow:0 2px 8px rgba(0,0,0,.04);
+      position:relative;overflow:hidden;
+    }
+    .ncard::after{content:'';position:absolute;right:0;top:0;bottom:0;width:3px;background:var(--gold);border-radius:0 2px 2px 0;opacity:0;transition:opacity .2s}
+    .ncard:active{transform:scale(.975);box-shadow:none}
+    .ncard:active::after{opacity:1}
+    .nc-title{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:4px;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .nc-prev{font-size:12px;color:#999;
+      display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.5}
+    .nc-meta{display:flex;justify-content:space-between;align-items:center;margin-top:7px}
+    .nc-date{font-size:10px;color:#ccc}
+    .nc-tag{font-size:10px;background:rgba(212,168,67,.1);color:#a07820;border-radius:6px;padding:2px 7px}
+
+    .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;
+      padding:70px 20px;color:#c0b090;gap:10px;text-align:center}
+    .empty-ico{font-size:52px;opacity:.35}
+    .empty p{font-size:13px;line-height:1.7}
+
+    /* FAB */
+    .fab{
+      position:fixed;left:18px;bottom:calc(18px + var(--sb));
+      width:58px;height:58px;border-radius:50%;
+      background:linear-gradient(135deg,var(--gold),#9a6e10);
+      border:none;color:white;font-size:28px;cursor:pointer;
+      box-shadow:0 6px 22px rgba(212,168,67,.45);
+      display:flex;align-items:center;justify-content:center;
+      transition:all .2s;z-index:50;
+    }
+    .fab:active{transform:scale(.88)}
+
+    /* ── EDITOR ── */
+    .ebar{
+      background:white;border-bottom:1px solid rgba(0,0,0,.08);
+      padding:10px 12px;display:flex;align-items:center;gap:8px;flex-shrink:0;
+    }
+    .etitle{
+      flex:1;border:none;outline:none;
+      font-family:'Cairo',sans-serif;font-size:16px;font-weight:700;
+      color:var(--ink);background:transparent;direction:rtl;min-width:0;
+    }
+    .etitle::placeholder{color:#ccc}
+
+    .fmtbar{
+      background:white;border-bottom:1px solid rgba(0,0,0,.05);
+      padding:7px 10px;display:flex;gap:5px;overflow-x:auto;flex-shrink:0;
+    }
+    .fmtbar::-webkit-scrollbar{display:none}
+    .fbtn{
+      background:none;border:1px solid rgba(0,0,0,.09);border-radius:8px;
+      padding:5px 11px;font-size:13px;cursor:pointer;color:var(--ink);
+      transition:all .15s;white-space:nowrap;flex-shrink:0;
+    }
+    .fbtn:active{background:rgba(212,168,67,.15);border-color:var(--gold)}
+
+    .econtent{
+      flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
+      background:white;
+    }
+    .etarea{
+      width:100%;min-height:100%;border:none;outline:none;
+      padding:0 18px calc(80px + var(--sb)) 18px;
+      font-family:'Cairo',sans-serif;font-size:15px;line-height:40px;
+      color:var(--ink);resize:none;direction:rtl;
+      background-image:repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 39px,
+        rgba(0,0,0,0.1) 39px,
+        rgba(0,0,0,0.1) 40px
+      );
+      background-attachment:local;
+      background-position:0 0;
+    }
+
+    .efooter{
+      position:absolute;bottom:0;left:0;right:0;
+      background:rgba(255,255,255,.95);backdrop-filter:blur(8px);
+      border-top:1px solid rgba(0,0,0,.07);
+      padding:9px 14px calc(9px + var(--sb));
+      display:flex;justify-content:space-between;align-items:center;
+    }
+    .estats{font-size:11px;color:#bbb}
+    .edel{
+      background:none;border:1px solid rgba(220,50,50,.25);color:#cc4444;
+      border-radius:8px;padding:7px 12px;font-family:'Cairo',sans-serif;
+      font-size:12px;cursor:pointer;transition:all .2s;
+    }
+    .edel:active{background:rgba(220,50,50,.1)}
+
+    /* ── INSTALL HINT (iOS) ── */
+    #iosHint{
+      display:none;position:fixed;bottom:calc(84px + var(--sb));left:12px;right:12px;
+      background:linear-gradient(135deg,#241200,#140a00);
+      border:1px solid var(--gold);border-radius:18px;
+      padding:14px 16px;z-index:200;
+      box-shadow:0 8px 32px rgba(0,0,0,.4);
+      animation:sup .4s ease;
+    }
+    @keyframes sup{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+    .ih-row{display:flex;align-items:center;gap:10px}
+    .ih-ico{font-size:28px;flex-shrink:0}
+    .ih-text strong{display:block;color:var(--gold2);font-size:13px;margin-bottom:2px}
+    .ih-text span{font-size:11px;color:var(--muted);line-height:1.5}
+    .ih-close{position:absolute;top:10px;left:12px;background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer}
+
+    /* ── TOAST ── */
+    .toast{
+      position:fixed;bottom:calc(85px + var(--sb));left:50%;
+      transform:translateX(-50%) translateY(12px);
+      background:rgba(20,8,0,.9);color:var(--gold2);
+      padding:9px 18px;border-radius:20px;font-size:12px;
+      border:1px solid var(--border);opacity:0;transition:all .3s;
+      pointer-events:none;z-index:300;white-space:nowrap;
+    }
+    .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+    /* ── CONFIRM SHEET ── */
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);
+      z-index:500;display:none;align-items:flex-end;justify-content:center}
+    .overlay.on{display:flex}
+    .sheet{
+      background:var(--paper);border-radius:20px 20px 0 0;
+      padding:22px 18px calc(22px + var(--sb));width:100%;max-width:480px;
+      animation:shup .3s ease;
+    }
+    @keyframes shup{from{transform:translateY(100%)}to{transform:translateY(0)}}
+    .sh-title{font-size:16px;font-weight:700;color:var(--ink);text-align:center;margin-bottom:6px}
+    .sh-msg{font-size:13px;color:#888;text-align:center;margin-bottom:18px}
+    .sh-acts{display:flex;gap:9px}
+    .sh-btn{flex:1;padding:13px;border-radius:12px;border:none;
+      font-family:'Cairo',sans-serif;font-size:14px;font-weight:600;cursor:pointer}
+    .sh-btn.cancel{background:rgba(0,0,0,.08);color:var(--ink)}
+    .sh-btn.danger{background:#e03333;color:white}
+
+    /* ── CHANGE PIN SHEET ── */
+    #pinSheet{
+      position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);
+      z-index:600;display:none;align-items:flex-end;justify-content:center;
+    }
+    #pinSheet.on{display:flex}
+    .ps-wrap{
+      background:linear-gradient(to bottom,#1c0c00,#110700);
+      border:1px solid var(--border);border-radius:24px 24px 0 0;
+      padding:24px 18px calc(24px + var(--sb));width:100%;max-width:400px;
+    }
+    .ps-title{font-family:'Amiri',serif;color:var(--gold2);font-size:18px;text-align:center;margin-bottom:4px}
+    .ps-sub{font-size:11px;color:var(--muted);text-align:center;margin-bottom:16px;min-height:16px}
+    .ps-close{float:left;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1}
+
+    /* entrance */
+    @keyframes appIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
+    .appin{animation:appIn .4s ease}
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════ LOCK ═══════════════ -->
+<div id="lock">
+  <div class="lk-label">✦ سري ✦</div>
+
+  <div style="position:relative;flex-shrink:0">
+    <div class="lk-glow"></div>
+    <div class="lk-book">
+      <div class="lk-book-body">
+        <div class="lk-book-icon">📖</div>
+        <div class="lk-book-name">دفتري</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="lk-panel">
+    <div class="lk-title" id="lkTitle">🔒 أدخل رمز PIN</div>
+    <div class="lk-sub" id="lkSub">أدخل رمز PIN من 4 أرقام</div>
+
+    <div class="dots">
+      <div class="dot" id="d0"></div>
+      <div class="dot" id="d1"></div>
+      <div class="dot" id="d2"></div>
+      <div class="dot" id="d3"></div>
+    </div>
+
+    <div class="numpad">
+      <button class="nb" ontouchstart="" onclick="pNum('1')">1</button>
+      <button class="nb" ontouchstart="" onclick="pNum('2')">2<sub>ABC</sub></button>
+      <button class="nb" ontouchstart="" onclick="pNum('3')">3<sub>DEF</sub></button>
+      <button class="nb" ontouchstart="" onclick="pNum('4')">4<sub>GHI</sub></button>
+      <button class="nb" ontouchstart="" onclick="pNum('5')">5<sub>JKL</sub></button>
+      <button class="nb" ontouchstart="" onclick="pNum('6')">6<sub>MNO</sub></button>
+      <button class="nb" ontouchstart="" onclick="pNum('7')">7<sub>PQRS</sub></button>
+      <button class="nb" ontouchstart="" onclick="pNum('8')">8<sub>TUV</sub></button>
+      <button class="nb" ontouchstart="" onclick="pNum('9')">9<sub>WXYZ</sub></button>
+      <button class="nb ghost"></button>
+      <button class="nb" ontouchstart="" onclick="pNum('0')">0</button>
+      <button class="nb" ontouchstart="" onclick="pDel()">⌫</button>
+    </div>
+
+    <div class="lk-err" id="lkErr"></div>
+    <div class="lk-hint" id="lkHint"></div>
+  </div>
+</div>
+
+<!-- ═══════════════ APP ═══════════════ -->
+<div id="app">
+  <!-- AppBar -->
+  <div class="abar">
+    <button class="abtn" id="backBtn" onclick="goList()" style="display:none">← رجوع</button>
+    <div class="abar-title" id="aTitle">📖 دفتري</div>
+    <div style="display:flex;gap:7px">
+      <button class="abtn" onclick="showPinSheet()" title="تغيير الرمز">⚙️</button>
+      <button class="abtn" onclick="lockApp()">🔒</button>
+    </div>
+  </div>
+
+  <!-- LIST -->
+  <div id="listView">
+    <div class="sbar">
+      <div class="sbar-icon">
+        <input type="search" id="sInput" placeholder="ابحث في ملاحظاتك..." oninput="render()" dir="rtl">
+      </div>
+    </div>
+    <div class="nscroll" id="nlist"></div>
+    <button class="fab" onclick="newNote()">＋</button>
+  </div>
+
+  <!-- EDITOR -->
+  <div id="editorView">
+    <div class="ebar">
+      <input type="text" class="etitle" id="eTitle" placeholder="العنوان..." maxlength="80" oninput="autoSave()">
+      <button class="abtn" onclick="autoSave();goList()">💾</button>
+    </div>
+    <div class="fmtbar">
+      <button class="fbtn" onclick="ins('**','**')"><b>B</b></button>
+      <button class="fbtn" onclick="ins('_','_')"><i>I</i></button>
+      <button class="fbtn" onclick="inl('## ')">H2</button>
+      <button class="fbtn" onclick="inl('- ')">• قائمة</button>
+      <button class="fbtn" onclick="inl('☐ ')">☐ مهمة</button>
+      <button class="fbtn" onclick="inl('> ')">❝ اقتباس</button>
+      <button class="fbtn" onclick="cycleEmoji()">😊</button>
+    </div>
+    <div class="econtent">
+      <textarea class="etarea" id="eBody" placeholder="ابدأ الكتابة هنا..." oninput="autoSave();stats()"></textarea>
+    </div>
+    <div class="efooter">
+      <div class="estats" id="eStats">0 كلمة</div>
+      <button class="edel" onclick="confirmDel()">🗑️ حذف</button>
+    </div>
+  </div>
+</div>
+
+<!-- iOS Install Hint -->
+<div id="iosHint">
+  <button class="ih-close" onclick="document.getElementById('iosHint').style.display='none'">✕</button>
+  <div class="ih-row">
+    <div class="ih-ico">📲</div>
+    <div class="ih-text">
+      <strong>نصّب التطبيق على هاتفك!</strong>
+      <span>اضغط على زر المشاركة <b>⬆️</b> ثم اختر<br>"إضافة إلى الشاشة الرئيسية"</span>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Delete Confirm -->
+<div class="overlay" id="delOverlay" onclick="this.classList.remove('on')">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sh-title">🗑️ حذف الملاحظة؟</div>
+    <div class="sh-msg">لا يمكن التراجع عن هذا الإجراء</div>
+    <div class="sh-acts">
+      <button class="sh-btn cancel" onclick="document.getElementById('delOverlay').classList.remove('on')">إلغاء</button>
+      <button class="sh-btn danger" onclick="doDelete()">حذف</button>
+    </div>
+  </div>
+</div>
+
+<!-- Change PIN Sheet -->
+<div id="pinSheet">
+  <div class="ps-wrap">
+    <button class="ps-close" onclick="closePinSheet()">✕</button>
+    <div class="ps-title">🔑 تغيير رمز PIN</div>
+    <div class="ps-sub" id="psSub">أدخل الرمز الحالي</div>
+    <div class="dots" style="margin-bottom:16px">
+      <div class="dot" id="pd0"></div>
+      <div class="dot" id="pd1"></div>
+      <div class="dot" id="pd2"></div>
+      <div class="dot" id="pd3"></div>
+    </div>
+    <div class="numpad">
+      <button class="nb" ontouchstart="" onclick="psBuf('1')">1</button>
+      <button class="nb" ontouchstart="" onclick="psBuf('2')">2<sub>ABC</sub></button>
+      <button class="nb" ontouchstart="" onclick="psBuf('3')">3<sub>DEF</sub></button>
+      <button class="nb" ontouchstart="" onclick="psBuf('4')">4<sub>GHI</sub></button>
+      <button class="nb" ontouchstart="" onclick="psBuf('5')">5<sub>JKL</sub></button>
+      <button class="nb" ontouchstart="" onclick="psBuf('6')">6<sub>MNO</sub></button>
+      <button class="nb" ontouchstart="" onclick="psBuf('7')">7<sub>PQRS</sub></button>
+      <button class="nb" ontouchstart="" onclick="psBuf('8')">8<sub>TUV</sub></button>
+      <button class="nb" ontouchstart="" onclick="psBuf('9')">9<sub>WXYZ</sub></button>
+      <button class="nb ghost"></button>
+      <button class="nb" ontouchstart="" onclick="psBuf('0')">0</button>
+      <button class="nb" ontouchstart="" onclick="psBuf('del')">⌫</button>
+    </div>
+    <div class="lk-err" id="psErr"></div>
+  </div>
+</div>
+
+<script>
+// ═══════ CONSTANTS ═══════
+const NK='daftari_notes3', PK='daftari_pin3', SK='daftari_sess3';
+const EMOJIS=['😊','❤️','⭐','✅','📌','💡','🔥','🎯','📝','🌟','⚡','🎉','🙏','✨','🎊'];
+
+// ═══════ STATE ═══════
+let notes=[], curId=null, pinBuf='', setting=false, tmp='', emoIdx=0;
+let psStep='verify', psBuf2='', psTmp='';
+
+// ═══════ INIT ═══════
+function init(){
+  notes=JSON.parse(localStorage.getItem(NK)||'[]');
+  const sess=sessionStorage.getItem(SK), pin=localStorage.getItem(PK);
+  if(sess==='ok'){openApp();return;}
+  if(!pin){
+    setting=true;
+    document.getElementById('lkTitle').textContent='🔐 إنشاء رمز PIN';
+    document.getElementById('lkSub').textContent='أنشئ رمز PIN من 4 أرقام';
+    document.getElementById('lkHint').textContent='أول مرة؟ أنشئ رمزك السري 🔐';
+  }
+  // iOS install hint (after 4s)
+  const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone=window.navigator.standalone;
+  if(isIOS&&!isStandalone){
+    setTimeout(()=>{document.getElementById('iosHint').style.display='block'},4000);
+  }
+}
+
+// ═══════ LOCK ═══════
+function pNum(n){
+  if(pinBuf.length>=4) return;
+  pinBuf+=n; dots('lock');
+  if(pinBuf.length===4) setTimeout(checkPin,160);
+}
+function pDel(){pinBuf=pinBuf.slice(0,-1);dots('lock')}
+
+function dots(who){
+  let prefix=who==='lock'?'d':'pd', buf=who==='lock'?pinBuf:psBuf2;
+  for(let i=0;i<4;i++){
+    const d=document.getElementById(prefix+i);
+    d.className='dot'+(i<buf.length?' on':'');
+  }
+}
+
+function checkPin(){
+  const stored=localStorage.getItem(PK);
+  if(setting){
+    if(!tmp){tmp=pinBuf;pinBuf='';dots('lock');
+      document.getElementById('lkSub').textContent='أعد إدخال الرمز للتأكيد';
+      document.getElementById('lkHint').textContent='';
+    } else {
+      if(pinBuf===tmp){
+        localStorage.setItem(PK,pinBuf);sessionStorage.setItem(SK,'ok');openApp();
+      } else {pinErr('الرمزان غير متطابقين ❌');tmp='';}
+    }
+  } else {
+    if(pinBuf===stored){sessionStorage.setItem(SK,'ok');openApp();}
+    else pinErr('رمز خاطئ، حاول مجدداً ❌');
+  }
+}
+
+function pinErr(msg){
+  for(let i=0;i<4;i++){const d=document.getElementById('d'+i);d.className='dot err';}
+  document.getElementById('lkErr').textContent=msg;
+  setTimeout(()=>{pinBuf='';dots('lock');document.getElementById('lkErr').textContent='';},900);
+}
+
+function openApp(){
+  document.getElementById('lock').style.display='none';
+  const a=document.getElementById('app');a.style.display='flex';a.classList.add('appin');
+  render();
+}
+function lockApp(){sessionStorage.removeItem(SK);location.reload();}
+
+// ═══════ NOTES ═══════
+function save(){localStorage.setItem(NK,JSON.stringify(notes))}
+
+function render(){
+  const q=(document.getElementById('sInput').value||'').toLowerCase();
+  let list=notes.filter(n=>!q||n.t.toLowerCase().includes(q)||n.b.toLowerCase().includes(q));
+  list.sort((a,b)=>b.u-a.u);
+  const el=document.getElementById('nlist');
+  if(!list.length){
+    el.innerHTML=`<div class="empty"><div class="empty-ico">📝</div><p>${q?'لا توجد نتائج':'لا توجد ملاحظات بعد<br>اضغط ＋ لإضافة ملاحظة'}</p></div>`;
+    return;
+  }
+  const now=new Date(),tod=now.toDateString(),
+    yes=new Date(now-86400000).toDateString();
+  const G={'اليوم':[],'أمس':[],'سابقاً':[]};
+  list.forEach(n=>{const d=new Date(n.u).toDateString();G[d===tod?'اليوم':d===yes?'أمس':'سابقاً'].push(n)});
+  el.innerHTML='';
+  Object.entries(G).forEach(([lbl,items])=>{
+    if(!items.length) return;
+    el.innerHTML+=`<div class="sec-lbl">${lbl}</div>`;
+    items.forEach(n=>{
+      const dt=new Date(n.u).toLocaleDateString('ar-SA',{day:'numeric',month:'short'});
+      const wc=n.b.trim()?n.b.trim().split(/\s+/).length:0;
+      el.innerHTML+=`<div class="ncard" onclick="openNote('${n.id}')">
+        <div class="nc-title">${esc(n.t)||'بدون عنوان'}</div>
+        <div class="nc-prev">${esc(n.b.replace(/\n/g,' '))||'ملاحظة فارغة'}</div>
+        <div class="nc-meta"><span class="nc-date">${dt}</span><span class="nc-tag">${wc} كلمة</span></div>
+      </div>`;
+    });
+  });
+}
+
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+function newNote(){
+  const id='n'+Date.now();
+  notes.unshift({id,t:'',b:'',u:Date.now()});
+  save(); openNote(id);
+}
+
+function openNote(id){
+  curId=id;
+  const n=notes.find(x=>x.id===id);if(!n)return;
+  document.getElementById('eTitle').value=n.t;
+  document.getElementById('eBody').value=n.b;
+  stats();
+  document.getElementById('listView').style.display='none';
+  document.getElementById('editorView').style.display='flex';
+  document.getElementById('backBtn').style.display='flex';
+  document.getElementById('aTitle').textContent='✏️ تحرير';
+  setTimeout(()=>document.getElementById('eBody').focus(),120);
+}
+
+function goList(){
+  autoSave();
+  document.getElementById('listView').style.display='flex';
+  document.getElementById('editorView').style.display='none';
+  document.getElementById('backBtn').style.display='none';
+  document.getElementById('aTitle').textContent='📖 دفتري';
+  render();
+}
+
+let saveTimer=null;
+function autoSave(){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>{
+    if(!curId) return;
+    const n=notes.find(x=>x.id===curId);if(!n)return;
+    n.t=document.getElementById('eTitle').value;
+    n.b=document.getElementById('eBody').value;
+    n.u=Date.now(); save();
+  },400);
+}
+
+function stats(){
+  const txt=document.getElementById('eBody').value;
+  const w=txt.trim()?txt.trim().split(/\s+/).length:0;
+  document.getElementById('eStats').textContent=`${w} كلمة · ${txt.length} حرف`;
+}
+
+function confirmDel(){document.getElementById('delOverlay').classList.add('on')}
+function doDelete(){
+  notes=notes.filter(n=>n.id!==curId);save();
+  document.getElementById('delOverlay').classList.remove('on');
+  goList(); toast('🗑️ تم حذف الملاحظة');
+}
+
+// ═══════ FORMAT ═══════
+function ins(a,b){
+  const ta=document.getElementById('eBody');
+  const s=ta.selectionStart,e=ta.selectionEnd,sel=ta.value.substring(s,e);
+  ta.value=ta.value.substring(0,s)+a+sel+b+ta.value.substring(e);
+  ta.setSelectionRange(s+a.length,e+a.length);ta.focus();autoSave();
+}
+function inl(pfx){
+  const ta=document.getElementById('eBody');
+  const s=ta.selectionStart,ls=ta.value.lastIndexOf('\n',s-1)+1;
+  ta.value=ta.value.substring(0,ls)+pfx+ta.value.substring(ls);
+  ta.setSelectionRange(ls+pfx.length,ls+pfx.length);ta.focus();autoSave();
+}
+function cycleEmoji(){
+  const ta=document.getElementById('eBody'),s=ta.selectionStart;
+  const em=EMOJIS[emoIdx%EMOJIS.length];emoIdx++;
+  ta.value=ta.value.substring(0,s)+em+ta.value.substring(s);
+  ta.setSelectionRange(s+em.length,s+em.length);ta.focus();autoSave();
+}
+
+// ═══════ TOAST ═══════
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('on');
+  setTimeout(()=>t.classList.remove('on'),2200);
+}
+
+// ═══════ CHANGE PIN ═══════
+function showPinSheet(){
+  psStep='verify';psBuf2='';psTmp='';
+  document.getElementById('psSub').textContent='أدخل الرمز الحالي';
+  document.getElementById('psErr').textContent='';
+  for(let i=0;i<4;i++) document.getElementById('pd'+i).className='dot';
+  document.getElementById('pinSheet').classList.add('on');
+}
+function closePinSheet(){document.getElementById('pinSheet').classList.remove('on')}
+
+function psBuf(n){
+  if(n==='del'){psBuf2=psBuf2.slice(0,-1);dots('ps');return;}
+  if(psBuf2.length>=4) return;
+  psBuf2+=n; dots('ps');
+  if(psBuf2.length===4) setTimeout(handlePS,160);
+}
+
+function handlePS(){
+  const stored=localStorage.getItem(PK);
+  if(psStep==='verify'){
+    if(psBuf2===stored){
+      psStep='new';psBuf2='';dots('ps');
+      document.getElementById('psSub').textContent='أدخل الرمز الجديد';
+      document.getElementById('psErr').textContent='';
+    } else {psErrF('رمز خاطئ ❌')}
+  } else if(psStep==='new'){
+    psTmp=psBuf2;psStep='confirm';psBuf2='';dots('ps');
+    document.getElementById('psSub').textContent='أعد إدخال الرمز الجديد';
+  } else if(psStep==='confirm'){
+    if(psBuf2===psTmp){
+      localStorage.setItem(PK,psBuf2);
+      closePinSheet();toast('✅ تم تغيير رمز PIN');
+    } else {psErrF('الرمزان غير متطابقين ❌');psStep='new';psTmp='';}
+  }
+}
+function psErrF(msg){
+  for(let i=0;i<4;i++) document.getElementById('pd'+i).className='dot err';
+  document.getElementById('psErr').textContent=msg;
+  setTimeout(()=>{psBuf2='';dots('ps');document.getElementById('psErr').textContent='';},900);
+}
+
+// ═══════ SERVICE WORKER (inline) ═══════
+const swCode=`
+const C='daftari-sw1';
+self.addEventListener('install',e=>{self.skipWaiting()});
+self.addEventListener('activate',e=>{
+  e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));
+  self.clients.claim();
+});
+self.addEventListener('fetch',e=>{
+  if(e.request.method!=='GET') return;
+  e.respondWith(caches.match(e.request).then(c=>{
+    if(c) return c;
+    return fetch(e.request).then(r=>{
+      if(r&&r.status===200){const cl=r.clone();caches.open(C).then(ca=>ca.put(e.request,cl));}
+      return r;
+    }).catch(()=>c);
+  }));
+});`;
+
+if('serviceWorker' in navigator){
+  const blob=new Blob([swCode],{type:'text/javascript'});
+  const url=URL.createObjectURL(blob);
+  navigator.serviceWorker.register(url,{scope:'./'}).catch(()=>{});
+}
+
+init();
+</script>
+</body>
+</html>
